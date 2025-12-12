@@ -17,6 +17,8 @@ function UserAdminTable() {
   const [showStaff, setShowStaff] = useState(false);
   const [add, setAddStaff] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [staffAccounts, setStaffAccounts] = useState([]);
+  const [patronAccounts, setPatronAccounts] = useState([]);
   const [newStaff, setNewStaff] = useState({
     firstName: '',
     lastName: '',
@@ -26,6 +28,73 @@ function UserAdminTable() {
     password: '',
     confirmPassword: ''
   });
+  
+
+ 
+  
+  
+  const fetchStaffAccounts = async () => {
+    try {
+      const response = await fetch('/api/staff/get-staff');
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+        
+      }
+      const data = await response.json();
+      setStaffAccounts(data);    
+    } catch (error) {
+      console.error('There was a problem with the fetch operation:', error);
+    }
+  };
+  
+  // useEffect(() => {
+  //   fetchStaffAccounts().then(() => {
+  //     if (staffAccounts.length > 0) {
+  //       console.log('Sample entry:', staffAccounts[0]);
+  //     }
+  //   });
+  // }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/users/essential', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setPatronAccounts(data);
+        console.log(response);
+      } catch (error) {
+        console.error('There was a problem with the fetch operation:', error);
+      }
+    };
+  
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/staff/get-staff');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setStaffAccounts(data);
+      } catch (error) {
+        console.error('There was a problem with the fetch operation:', error);
+      }
+    };
+  
+    fetchData();
+  }, []);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setNewStaff({ ...newStaff, [name]: value });
@@ -58,6 +127,7 @@ function UserAdminTable() {
       if (response.ok) {
         // Handle success - maybe clear the form or give user feedback
         console.log('Staff added successfully');
+        setAddStaff(false);
         setNewStaff({
           firstName: '',
           lastName: '',
@@ -93,10 +163,10 @@ function UserAdminTable() {
   };
 
   
-
+ 
   const userEntries = [
     {
-      UserID: 1,
+      UserID: 53,
       Name: "Pia Lorraine Tantay",
       Username: "yapyapiee",
       PhoneNumber: "0928643478",
@@ -190,13 +260,28 @@ function UserAdminTable() {
     },
   ]; //SIMULATING BACKEND
 
-  const filteredEntries = userEntries.filter((entry) =>
-    entry.Name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // const staffData = staffAccounts.map(user => ({
+  //   username: user.username,
+  //   email: user.email,
+  //   profile: user.profile // Or specific profile fields if needed
 
-  const filteredEntriesStaff = staffEntries.filter((entry) =>
-    entry.Name.toLowerCase().includes(searchQuery.toLowerCase())
+  // }));
+  // console.log(staffData);
+  
+  const filteredEntriesUsers = patronAccounts.filter((entry) =>      //Added -users
+  entry.profile.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  entry.profile.lastName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+
+  // const filteredEntriesStaff = staffEntries.filter((entry) =>
+  //   entry.Name.toLowerCase().includes(searchQuery.toLowerCase())
+  // );
+  const filteredEntriesStaff = staffAccounts.filter((entry) =>
+  entry.profile.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  entry.profile.lastName.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
 
   const handleUserClick = () => {
     setUserClick(true);
@@ -302,7 +387,7 @@ function UserAdminTable() {
               </div>
             </div>
           </div>
-
+        {/* {console.log(staffAccounts)} */}
           <div className="middleContentDiv border-blue-700 p-[2rem] flex flex-col h-[85%] w-screen">
             <div className="searchExport flex justify-between border-[#392E05] w-[100%]">
               <SearchBar
@@ -358,7 +443,7 @@ function UserAdminTable() {
                   >
                     <h1 className="text-[1rem] font-bold">User</h1>
                     <h1 className="ml-[0.5rem] w-[1.5rem] h-[1.5rem] text-[1rem] bg-[#392E05] bg-opacity-20 rounded-lg">
-                      {userEntries.length}
+                      {patronAccounts.length}
                     </h1>
                   </button>
 
@@ -375,16 +460,16 @@ function UserAdminTable() {
                   >
                     <h1 className="text-[1rem] font-bold">Staff</h1>
                     <h1 className="ml-[0.5rem] w-[1.5rem] bg-[#392E05] bg-opacity-20 rounded-lg">
-                      {staffEntries.length}
+                      {filteredEntriesStaff.length}
                     </h1>
                   </button>
                 </div>
                 {userClick === true && (
-                  <h1>{`Showing ${filteredEntries.length} out of ${userEntries.length} results`}</h1>
+                  <h1>{`Showing ${filteredEntriesUsers.length} out of ${patronAccounts.length} results`}</h1>
                 )}
 
                 {staffClick === true && (
-                  <h1>{`Showing ${filteredEntriesStaff.length} out of ${userEntries.length} results`}</h1>
+                  <h1>{`Showing ${filteredEntriesStaff.length} out of ${staffAccounts.length} results`}</h1>
                 )}
               </div>
 
@@ -435,41 +520,45 @@ function UserAdminTable() {
                     {/* Rendering AdminEntry components dynamically using map */}
                     {showUser === true && (
                       <>
-                        {filteredEntries.map((entry, index) => (
+                      
+                        {filteredEntriesUsers.map((entry, index) => (
+                          (console.log(entry)),
                           <Link
                             key={index} // Add a unique key for each entry
                             to={{
-                              pathname: `/BookFlow-Admin-entryProfile-user${entry.UserID}`,
+                              pathname: `/BookFlow-Admin-entryProfile-user${entry.id}`,
                               state: { entryData: entry }, // Pass entry data as state
                             }}
                             className="block hover:bg-[#392E05] hover:bg-opacity-20 rounded"
                           >
                             <AdminEntry
                               key={index} // Add a unique key for each entry
-                              UserID={entry.UserID}
-                              Name={entry.Name}
-                              Username={entry.Username}
-                              PhoneNumber={entry.PhoneNumber}
-                              Email={entry.Email}
-                              Status={entry.Status}
-                              Type={entry.Type}
+                              id={entry.id}
+                              username={entry.username}
+                              firstName={entry.profile.firstName}
+                              lastName={entry.profile.lastName}
+                              phoneNumber={entry.profile.phoneNumber}
+                              email={entry.email}
+                              status={entry.status}
+                              Type="Patron" // Assuming all entries are patrons, set Type to "Patron"
                             />
                           </Link>
                         ))}
                       </>
                     )}
-
                     {showStaff === true && (
                       <>
                         {filteredEntriesStaff.map((entry, index) => (
                           <AdminEntry
-                            key={index} // Add a unique key for each entry
-                            UserID={entry.StaffID}
-                            Name={entry.Name}
-                            Username={entry.Username}
-                            PhoneNumber={entry.PhoneNumber}
-                            Email={entry.Email}
-                            Type={entry.Type}
+                          key={index} // Add a unique key for each entry
+                          id={entry.id} // Replace 'id' with the correct property name for the staff ID
+                          firstName={entry.profile.firstName}
+                          lastName={entry.profile.lastName}
+                          username={entry.username}
+                          phoneNumber={entry.profile.phoneNumber}
+                          email={entry.email}
+                          Type="Staff" // Assuming all entries are staff, set Type to "Staff"
+                          // Include other properties as needed
                           />
                         ))}
                       </>
@@ -606,7 +695,8 @@ function UserAdminTable() {
             <div className="buttonsDiv w-[100%] h-[10%] justify-center items-center flex">
               <button
                 className="w-[13rem] text-white bg-[#392E05] h-[2rem] mt-[2rem] rounded-xl"
-                onClick={handleAddStaff} type="submit"
+                onSubmit={handleAddStaff}
+                type="submit"
               >
                 <h1>Confirm</h1>
               </button>
